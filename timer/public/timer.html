@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>タスクタイマー</title>
+	<title>TODOタイマー</title>
 	<link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -24,7 +24,7 @@
 
 	<hr>
 
-	<h2>リストの管理</h2>
+	<h2>TODOリスト</h2>
 	<div class="add-form">
 		<!-- タスク名入力フォーマット(入力必須) -->
 		<input type="text" id="timeName" placeholder="タスク（例: カップ麺）" required>
@@ -39,24 +39,30 @@
 	<ul id="timerList"></ul>
 
 	<script>
+
 		// --- 状態管理オブジェクト ---
 		let timerList = [];				// 時間リストの配列
 		let currentSeconds = 0;			// 現在カウントダウン中の秒数
 		let initialSeconds = 0;			// 選択されたタイマーの初期秒数
 		let countdownInterval = null;	// タイマーfunctionが入る
 
-		// --- 初期化処理 ---
+
+		// --- 初期処理 ---
 		// ページ読み込み時にローカルストレージからデータを取得する
 		window.onload = function () {
 			const savedData = localStorage.getItem('myTimerList');
 			if (savedData) {
 				// JSON文字列をパースして配列に戻す
 				timerList = JSON.parse(savedData);
-			} else {
+			}
+			// else {
+			if (!savedData || timerList.length === 0) {
 				// 初期データがない場合のデフォルトサンプル
 				timerList = [
 					{id: Date.now(), name: "カップラーメン", seconds: 180},
-					{id: Date.now() + 1, name: "30秒ストレッチ", seconds: 30}
+					{id: Date.now() + 1, name: "休憩(5分)", seconds: 300},
+					{id: Date.now() + 2, name: "作業(25分)", seconds: 1500},
+					{id: Date.now() + 3, name: "休憩(30分)", seconds: 1800}
 				];
 
 				// ローカルストレージに保存
@@ -72,11 +78,13 @@
 			}
 		};
 
+
 		// --- ローカルストレージへの保存処理 ---
 		function saveToLocalStorage() {
 			// 配列をJSON文字列に変換して保存
 			localStorage.setItem('myTimerList', JSON.stringify(timerList));
 		}
+
 
 		// --- リストの生成処理 ---
 		function renderList() {
@@ -151,6 +159,7 @@
 			});
 		}
 
+
 		// --- タイマー時間のセット ---
 		function setTimer(seconds) {
 			initialSeconds = seconds;
@@ -158,6 +167,7 @@
 			// タイマーの表示更新
 			updateDisplay();
 		}
+
 
 		// --- ディスプレイの表示更新 ---
 		function updateDisplay() {
@@ -173,6 +183,7 @@
 			// 表示
 			document.getElementById('timerDisplay').textContent = `${dtime}`;
 		}
+
 
 		// --- スタートボタンの処理 ---
 		function startTimer() {
@@ -219,6 +230,7 @@
 			}, 1000); //1000ミリ秒（1秒）ごとに実行
 		}
 
+
 		// --- ストップボタンの処理 ---
 		function stopTimer() {
 			clearInterval(countdownInterval);
@@ -231,6 +243,7 @@
 			document.getElementById('stopBtn').disabled = true;
 		}
 
+
 		// --- リセットボタンの処理 ---
 		function resetTimer() {
 			// タイマーをストップさせる
@@ -242,6 +255,7 @@
 			// タイマーの表示更新
 			updateDisplay();
 		}
+
 
 		// --- リストの追加・削除処理 ---
 		function addTimerItem() {
@@ -284,6 +298,8 @@
 			secondsInput.value = '';
 		}
 
+
+		// --- 削除ボタン押下時の処理 ---
 		function deleteTimerItem(id) {
 			// 元のタイマーリストから、条件に合うデータだけを絞り込む
 			timerList = timerList.filter(function (item) {
