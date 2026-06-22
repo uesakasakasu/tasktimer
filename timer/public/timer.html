@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>タスクタイマー</title>
+	<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+	<h1>タイマー</h1>
+
+	<!-- タイマーのカウント -->
+	<div class="timer-display" id="timerDisplay">00:00</div>
+
+	<div class="controls">
+		<!-- 各種ボタンの定義 -->
+		<button id="startBtn" onclick="startTimer()">スタート</button>
+		<button id="stopBtn" onclick="stopTimer()" disabled>ストップ</button>
+		<button id="resetBtn" onclick="resetTimer()">リセット</button>
+	</div>
+
+	<hr>
+
+	<h2>リストの管理</h2>
+	<div class="add-form">
+		<!-- タスク名入力フォーマット(入力必須) -->
+		<input type="text" id="timeName" placeholder="タスク（例: カップ麺）" required>
+		
+		<!-- タスク時間入力フォーマット(最小1、入力必須) -->
+		<input type="number" id="timeSeconds" placeholder="秒数（例: 180）" min="1" required>
+		
+		<!-- タスク追加ボタン -->
+		<button onclick="addTimerItem()">追加</button>
+	</div>
+
+	<ul id="timerList"></ul>
+
+	<script>
+		// --- 状態管理オブジェクト ---
+		let timerList = [];				// 時間リストの配列
+		let currentSeconds = 0;			// 現在カウントダウン中の秒数
+		let initialSeconds = 0;			// 選択されたタイマーの初期秒数
+		let countdownInterval = null;	// タイマーfunctionが入る
+
+		// --- 初期化処理 ---
+		// ページ読み込み時にローカルストレージからデータを取得する
+		window.onload = function () {
+			const savedData = localStorage.getItem('myTimerList');
+			if (savedData) {
+				// JSON文字列をパースして配列に戻す
+				timerList = JSON.parse(savedData);
+			} else {
+				// 初期データがない場合のデフォルトサンプル
+				timerList = [
+					{id: Date.now(), name: "カップラーメン", seconds: 180},
+					{id: Date.now() + 1, name: "30秒ストレッチ", seconds: 30}
+				];
+
+				// ローカルストレージに保存
+				saveToLocalStorage();
+			}
+
+			// リストの再生成(最新の状態に更新)
+			renderList();
+
+			// 最初のアイテムをデフォルトとしてセット
+			if (timerList.length > 0) {
+				setTimer(timerList[0].seconds);
+			}
+		};
+
+		// --- ローカルストレージへの保存処理 ---
+		function saveToLocalStorage() {
+			// 配列をJSON文字列に変換して保存
+			localStorage.setItem('myTimerList', JSON.stringify(timerList));
+		}
+
+		// --- リストの生成処理 ---
+		function renderList() {
+			const listElement = document.getElementById('timerList');
+			listElement.innerHTML = ''; // 一度中身を空にする
+
+			// 配列のループ処理を function(item) の形に変更
+			timerList.forEach(function (item) {
+
+				// リストの行（li）の生成
+				const li = document.createElement('li');
+
+				// リストの行（li）をクリックしたらその時間をタイマーにセット（通常関数に変更）
+				li.onclick = function () {
+					// タイマー作動中は切り替えさせない
+					if (countdownInterval) {
+						return;
+					}
+
+					// 時間をタイマーにセットする
+					setTimer(item.seconds);
+
+					// 現在選択されているタイマーの表示を切り替える
+					document.querySelectorAll('li').forEach(function (el) {
+						// すべての枠線をリセット
+						el.classList.remove('active');
+					});
+					// 選択中のリストに対して枠線を設定する
+					li.classList.add('active');
+				};
+
+
+				// --- 時間の表示に関する処理 ---
+				// テキスト部分（名前と分数:秒数表記）
+				// 例：111秒 → 01:51
+				const minutes = Math.floor(item.seconds / 60);
+				const seconds = item.seconds % 60;
+				const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+				// 表示
+				//document.getElementById('timerDisplay').textContent = `${timeString}`;
+
+				// リスト要素liにテキストを追加
+				// 「span」という文字専用のタグを新しく作る
+				const textSpan = document.createElement('span');
+				// spanタグの中に、タイマー名と時間をテキストとして入れる
+				// 「例：カップラーメン (03:00)」
+				textSpan.textContent = `${item.name} (${timeString})`;
+				// リストの行（li）の中に入れる
+				li.appendChild(textSpan);
+
+
+				// --- 削除に関する処理 ---
+				// 削除ボタン
+				const deleteBtn = document.createElement('button');
+				deleteBtn.textContent = '削除';
+				deleteBtn.className = 'delete-btn';
+
+				// 削除ボタンクリック時の処理を追加
+				deleteBtn.onclick = function (e) {
+					// 親要素(タスクレコード)へのクリックイベント伝播を防ぐ
+					e.stopPropagation();
+					// 削除処理の呼び出し
+					deleteTimerItem(item.id);
+				};
+
+				// リストの行（li）の中に入れる
+				li.appendChild(deleteBtn);
+
+				// リストにリストの行（li）を追加
+				listElement.appendChild(li);
+			});
+		}
+
+		// --- タイマー時間のセット ---
+		function setTimer(seconds) {
+			initialSeconds = seconds;
+			currentSeconds = seconds;
+			// タイマーの表示更新
+			updateDisplay();
+		}
+
+		// --- ディスプレイの表示更新 ---
+		function updateDisplay() {
+			// 分
+			const minutes = Math.floor(currentSeconds / 60);
+
+			// 秒
+			const seconds = currentSeconds % 60;
+
+			// 分:秒(2桁埋め)
+			const dtime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+			// 表示
+			document.getElementById('timerDisplay').textContent = `${dtime}`;
+		}
+
+		// --- スタートボタンの処理 ---
+		function startTimer() {
+			// すでに動いている場合、何もしない
+			if (countdownInterval) {
+				return;
+			}
+
+			// 0秒以下の場合、スタートしない
+			if (currentSeconds <= 0) {
+				return;
+			}
+
+			// スタートボタンを非活性化
+			document.getElementById('startBtn').disabled = true;
+
+			// ストップボタンを活性化
+			document.getElementById('stopBtn').disabled = false;
+
+			// 1秒ごとの定期実行処理を function() の形に変更
+			// JavaScriptのタイマー関数を使用
+			countdownInterval = setInterval(function () {
+
+				// -1秒カウントダウン
+				currentSeconds--;
+
+				// タイマーの表示更新
+				updateDisplay();
+
+				// カウントが終わったら
+				if (currentSeconds <= 0) {
+					// setInterval関数によって開始された繰り返し処理をキャンセルする
+					clearInterval(countdownInterval);
+
+					// タイマーfunctionをリセット
+					countdownInterval = null;
+
+					// アラートを上げる
+					alert('時間になりました！');
+
+					// リセット処理
+					resetTimer();
+				}
+			}, 1000); //1000ミリ秒（1秒）ごとに実行
+		}
+
+		// --- ストップボタンの処理 ---
+		function stopTimer() {
+			clearInterval(countdownInterval);
+			countdownInterval = null;
+
+			// スタートボタンを活性化
+			document.getElementById('startBtn').disabled = false;
+
+			// ストップボタンを非活性化
+			document.getElementById('stopBtn').disabled = true;
+		}
+
+		// --- リセットボタンの処理 ---
+		function resetTimer() {
+			// タイマーをストップさせる
+			stopTimer();
+
+			// 現在の秒数を選択されているタイマーの秒数に戻す
+			currentSeconds = initialSeconds;
+
+			// タイマーの表示更新
+			updateDisplay();
+		}
+
+		// --- リストの追加・削除処理 ---
+		function addTimerItem() {
+			// タスク名
+			const nameInput = document.getElementById('timeName');
+
+			// タスクの秒数
+			const secondsInput = document.getElementById('timeSeconds');
+
+			// で前後の余計な空白を消す
+			const name = nameInput.value.trim();
+
+			// 文字列を「10進数の整数」に変換する
+			const seconds = parseInt(secondsInput.value, 10);
+
+			// 不正値処理(nullと秒数が全角の場合など)
+			if (!name || isNaN(seconds) || seconds <= 0) {
+				alert('正しい名前と秒数を入力してください。');
+				return;
+			}
+
+			// タイマーのデータ（オブジェクト）を作成
+			const newItem = {
+				id: Date.now(),　// 絶対に他のタイマーと被らないユニークなID
+				name: name,
+				seconds: seconds
+			};
+
+			// 元々あったタイマーリストに、今回入力した内容のデータを追加する
+			timerList.push(newItem);
+
+			// ローカルストレージに保存
+			saveToLocalStorage();
+
+			// リストの再生成(最新の状態に更新)
+			renderList();
+
+			// 次の入力のために、入力フォームの中身をクリア
+			nameInput.value = '';
+			secondsInput.value = '';
+		}
+
+		function deleteTimerItem(id) {
+			// 元のタイマーリストから、条件に合うデータだけを絞り込む
+			timerList = timerList.filter(function (item) {
+				return item.id !== id; // 絶対に他のタイマーと被らないユニークなID
+			});
+
+			// ローカルストレージに保存
+			saveToLocalStorage();
+
+			// リストの再生成(最新の状態に更新)
+			renderList();
+		}
+	</script>
+</body>
+
+</html>

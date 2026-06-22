@@ -1,0 +1,101 @@
+/* 全体のリセットと基本スタイル */
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+/* 見出しのスタイル */
+h1, h2 {
+    text-align: center;
+}
+
+/* カウントダウン表示部分 */
+.timer-display {
+    font-size: 3rem;
+    text-align: center;
+    margin: 20px 0;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* コントロールボタンと追加フォームのレイアウト */
+.controls, .add-form {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 入力フォームのスタイル */
+input[type="number"],input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* 基本ボタンのスタイル */
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+/* ボタンのホバー時の色 */
+button:hover {
+    background-color: #2980b9;
+}
+
+/* 非活性化（disabled）されているボタンのスタイル */
+button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* 削除ボタンの色 */
+.delete-btn {
+    background-color: #e74c3c;
+}
+
+/* 削除ボタンのホバー時の色(少し濃くなる) */
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+
+/* リスト全体のスタイル */
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+/* リストアイテムの各種スタイル */
+li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+/* リストアイテムのホバー時の動き(右にちょっとずらす) */
+li:hover {
+    transform: translateX(2px);
+}
+
+/* 選択されているタイマー（アクティブ状態）の色 */
+li.active {
+    border-left: 5px solid #2ecc71;
+    background-color: #e8f8f5;
+}
